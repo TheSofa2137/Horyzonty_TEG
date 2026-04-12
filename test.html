@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test WebSocket</title>
+    <style>body { font-family: monospace; background: #1e1e1e; color: #0f0; padding: 20px; }</style>
+</head>
+<body>
+    <h2>Terminal Podróży</h2>
+    <button onclick="start()">Generuj Plan (Lizbona, 2000 PLN)</button>
+    <div id="log" style="margin-top: 20px; white-space: pre-wrap;"></div>
+
+    <script>
+        function start() {
+            const log = document.getElementById('log');
+            log.innerHTML = "Połączono z serwerem...\n";
+
+            const ws = new WebSocket("ws://127.0.0.1:8000/ws/plan");
+
+            ws.onopen = () => {
+                // Wysyłamy prośbę do serwera
+                ws.send(JSON.stringify({ city: "Lisbon", budget: 2000 }));
+            };
+
+            ws.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                if (data.type === 'agent_update') {
+                    log.innerHTML += `\n[🔄 STATUS] ${data.message}`;
+                } else if (data.type === 'final_plan') {
+                    log.innerHTML += `\n\n[✅ PLAN GOTOWY]\n${data.content}`;
+                } else if (data.type === 'done') {
+                    log.innerHTML += `\n\n--- KONIEC ---`;
+                    ws.close();
+                }
+            };
+        }
+    </script>
+</body>
+</html>
