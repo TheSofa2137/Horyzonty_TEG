@@ -1,0 +1,42 @@
+[
+  {
+    "question": "What are the flight options from Warsaw to Rome and how much do they cost?",
+    "ground_truth": "There are three flight options from Warsaw (WAW) to Rome: Alitalia for 480 PLN, LOT Polish Airlines for 550 PLN, and Ryanair for 380 PLN."
+  },
+  {
+    "question": "Which attractions can I visit in Lisbon for free?",
+    "ground_truth": "In Lisbon, you can visit the Alfama District and Praça do Comércio (Commerce Square) for free (0€)."
+  },
+  {
+    "question": "I'm looking for a hotel in Paris. What are the prices for the Ritz and Plaza Athénée?",
+    "ground_truth": "In Paris, the Hotel Ritz costs 600€ per night and the Hotel Plaza Athénée costs 520€ per night."
+  },
+  {
+    "question": "What is the cheapest way to fly from Warsaw to Vienna?",
+    "ground_truth": "The cheapest flight from Warsaw to Vienna is with Wizz Air, costing 240 PLN."
+  },
+  {
+    "question": "List 3 landmarks in Barcelona and their entry fees.",
+    "ground_truth": "Three landmarks in Barcelona are: Sagrada Familia (26€), Park Güell (10€), and Casa Batlló (35€)."
+  },
+  {
+    "question": "What are the budget hotel options in Krakow?",
+    "ground_truth": "The most budget-friendly hotel in Krakow in the database is the Bonarka City Hotel at 160 PLN. Other options include Stary Hotel (290 PLN) and Hotel Copernicus (350 PLN)."
+  },
+  {
+    "question": "Can I visit the Louvre Museum and Eiffel Tower in Paris? How much is the total entry fee?",
+    "ground_truth": "Yes, you can visit both. The Eiffel Tower costs 20€ and the Louvre Museum costs 18€, making the total entry fee 38€."
+  },
+  {
+    "question": "What airlines fly from Warsaw to Amsterdam?",
+    "ground_truth": "Airlines flying from Warsaw to Amsterdam include LOT Polish Airlines (450 PLN) and KLM (520 PLN)."
+  },
+  {
+    "question": "Are there any free things to do in Amsterdam?",
+    "ground_truth": "Yes, you can visit Dam Square and Vondelpark for free in Amsterdam."
+  },
+  {
+    "question": "What is the most expensive attraction in Rome according to the records?",
+    "ground_truth": "The most expensive attraction in Rome is the Borghese Gallery, which costs 25€."
+  }
+]

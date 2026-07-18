@@ -1,0 +1,957 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Horyzonty Trip Planner</title>
+    <style>
+        :root {
+            --bg-primary: #07111f;
+            --bg-secondary: #0c1728;
+            --panel-bg: rgba(11, 20, 35, 0.82);
+            --panel-border: rgba(255, 255, 255, 0.08);
+            --text-primary: #f4f7ff;
+            --text-secondary: #b3bfd6;
+            --accent: #7a8cff;
+            --accent-soft: #96a5ff;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+
+        body {
+            background: radial-gradient(circle at top left, rgba(122, 140, 255, 0.15), transparent 30%),
+                        linear-gradient(180deg, var(--bg-secondary) 0%, var(--bg-primary) 100%);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        header {
+            padding: 20px 30px;
+            border-bottom: 1px solid var(--panel-border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(8, 15, 31, 0.9);
+            backdrop-filter: blur(10px);
+        }
+
+        header h1 { font-size: 24px; font-weight: 600; letter-spacing: -0.5px; }
+        .status { padding: 8px 16px; border-radius: 20px; font-size: 13px; font-weight: 600; background: rgba(255,255,255,0.05); border: 1px solid var(--panel-border); color: #ff6b81; transition: all 0.3s; }
+        .status.online { color: #42d392; border-color: rgba(66, 211, 146, 0.3); background: rgba(66, 211, 146, 0.1); }
+        .new-chat-btn {
+            padding: 8px 16px !important;
+            border-radius: 20px !important;
+            font-size: 13px !important;
+            font-weight: 600 !important;
+            background: rgba(255, 80, 80, 0.15) !important;
+            border: 1px solid rgba(255, 80, 80, 0.4) !important;
+            color: #ff8a8a !important;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .new-chat-btn:hover { background: rgba(255, 80, 80, 0.3) !important; border-color: rgba(255, 80, 80, 0.7) !important; color: #ffaaaa !important; }
+
+        main {
+            display: grid;
+            grid-template-columns: 1fr 400px;
+            gap: 20px;
+            padding: 20px 30px;
+            flex: 1;
+            height: calc(100vh - 80px);
+        }
+
+        .panel {
+            background: var(--panel-bg);
+            border: 1px solid var(--panel-border);
+            border-radius: 20px;
+            display: flex;
+            flex-direction: column;
+            backdrop-filter: blur(15px);
+            overflow: hidden;
+            position: relative; /* Wymagane do pozycjonowania formularza nakładki */
+        }
+
+        /* ── Styl Formularza Startowego ────────────────────────────────────── */
+        .setup-overlay {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: #091324;
+            z-index: 50;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 40px;
+        }
+        .setup-form {
+            width: 100%;
+            max-width: 450px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--panel-border);
+            padding: 30px;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+        .setup-form h2 {
+            font-size: 20px;
+            margin-bottom: 20px;
+            color: var(--text-primary);
+            text-align: center;
+        }
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            margin-bottom: 16px;
+        }
+        .form-group label {
+            font-size: 13px;
+            color: var(--text-secondary);
+            font-weight: 600;
+        }
+        .form-group input {
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid var(--panel-border);
+            background: rgba(255,255,255,0.05);
+            color: white;
+            outline: none;
+            font-size: 14.5px;
+            transition: border-color 0.2s;
+        }
+        .form-group input:focus { border-color: var(--accent); }
+        .form-row-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+        .setup-submit-btn {
+            width: 100%;
+            padding: 14px;
+            border-radius: 8px;
+            border: none;
+            background: linear-gradient(135deg, #7082ff 0%, #8a5cff 100%);
+            color: white;
+            font-weight: bold;
+            font-size: 15px;
+            cursor: pointer;
+            margin-top: 10px;
+            transition: opacity 0.2s;
+        }
+        .setup-submit-btn:hover { opacity: 0.9; }
+
+        /* Agent progress bar */
+        .agent-progress {
+            padding: 10px 20px;
+            border-bottom: 1px solid var(--panel-border);
+            display: none;
+            gap: 6px;
+            align-items: center;
+            background: rgba(122, 140, 255, 0.05);
+        }
+        .agent-progress.active { display: flex; }
+        .agent-step {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            background: rgba(255,255,255,0.03);
+            border: 1px solid var(--panel-border);
+            transition: all 0.3s;
+        }
+        .agent-step.active {
+            color: var(--accent);
+            background: rgba(122, 140, 255, 0.15);
+            border-color: rgba(122, 140, 255, 0.4);
+        }
+        .agent-step.done { color: #42d392; background: rgba(66, 211, 146, 0.1); border-color: rgba(66, 211, 146, 0.3); }
+        .agent-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+        .agent-dot.pulse { animation: pulse 1s infinite; }
+        @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+        .agent-arrow { color: var(--panel-border); font-size: 10px; }
+
+        /* Chat section */
+        .chat-header { padding: 20px; border-bottom: 1px solid var(--panel-border); font-weight: bold; display: flex; justify-content: space-between; align-items: center; }
+        .chat-messages { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; scroll-behavior: smooth; }
+
+        .msg-wrapper { display: flex; flex-direction: column; max-width: 85%; animation: fadeInUp 0.3s ease; }
+        .msg-wrapper.user { align-self: flex-end; align-items: flex-end; }
+        .msg-wrapper.bot { align-self: flex-start; align-items: flex-start; }
+        @keyframes fadeInUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        .msg-timestamp { font-size: 10px; color: var(--text-secondary); margin-bottom: 4px; opacity: 0.6; }
+
+.msg { padding: 14px 18px; border-radius: 18px; line-height: 1.7; font-size: 14.5px; position: relative; white-space: pre-wrap; }        .user-msg { background: linear-gradient(135deg, #7082ff 0%, #8a5cff 100%); color: white; border-bottom-right-radius: 4px; }
+        .bot-msg { background: rgba(255,255,255,0.05); border: 1px solid var(--panel-border); color: var(--text-primary); border-bottom-left-radius: 4px; }
+
+        /* Markdown in messages */
+        .bot-msg h3 { font-size: 15px; color: var(--accent); margin: 12px 0 6px; }
+        .bot-msg strong { color: #e0e8ff; }
+        .bot-msg ul, .bot-msg ol { padding-left: 20px; margin: 6px 0; }
+        .bot-msg li { margin: 3px 0; }
+        .bot-msg hr { border: none; border-top: 1px solid var(--panel-border); margin: 10px 0; }
+        .bot-msg code { background: rgba(255,255,255,0.1); padding: 2px 6px; border-radius: 4px; font-family: monospace; font-size: 13px; }
+        .bot-msg em { color: var(--accent-soft); }
+
+        /* Copy button */
+        .msg-actions { display: flex; gap: 6px; margin-top: 6px; }
+        .copy-btn {
+            padding: 4px 10px;
+            border-radius: 8px;
+            border: 1px solid var(--panel-border);
+            background: rgba(255,255,255,0.03);
+            color: var(--text-secondary);
+            font-size: 11px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .copy-btn:hover { background: rgba(122, 140, 255, 0.15); color: var(--accent); border-color: rgba(122, 140, 255, 0.3); }
+        .copy-btn.copied { color: #42d392; border-color: rgba(66, 211, 146, 0.3); }
+
+        .source-tag { display: block; margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.1); font-size: 12px; color: var(--accent-soft); }
+
+        /* Typing indicator animation */
+        .typing-indicator { display: flex; align-items: center; gap: 8px; padding: 14px 18px; background: rgba(255,255,255,0.05); border: 1px solid var(--panel-border); border-radius: 18px; border-bottom-left-radius: 4px; max-width: 120px; }
+        .typing-dots { display: flex; gap: 4px; }
+        .typing-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); animation: typing 1.2s infinite; }
+        .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+        .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes typing { 0%,60%,100% { transform: translateY(0); opacity: 0.4; } 30% { transform: translateY(-6px); opacity: 1; } }
+
+        .input-area { padding: 20px; border-top: 1px solid var(--panel-border); display: flex; gap: 10px; background: rgba(5, 10, 20, 0.5); }
+        input[type="text"] { flex: 1; padding: 15px; border-radius: 12px; border: 1px solid var(--panel-border); background: rgba(255,255,255,0.05); color: white; outline: none; transition: border 0.2s; }
+        input[type="text"]:focus { border-color: var(--accent); }
+        button { padding: 15px 25px; border-radius: 12px; border: none; background: linear-gradient(135deg, #7082ff 0%, #8a5cff 100%); color: white; font-weight: bold; cursor: pointer; transition: opacity 0.2s; }
+        button:hover { opacity: 0.9; }
+        button:disabled { background: #555; cursor: not-allowed; color: #888; }
+
+        /* Right sidebar */
+        .sidebar { display: flex; flex-direction: column; gap: 20px; }
+
+        /* Session panel */
+        .info-box { padding: 20px; }
+        .session-header {
+            display: flex; align-items: center; gap: 10px;
+            margin-bottom: 16px; padding-bottom: 12px;
+            border-bottom: 1px solid var(--panel-border);
+        }
+        .session-icon { font-size: 22px; line-height: 1; }
+        .session-title-area { display: flex; flex-direction: column; gap: 1px; }
+        .session-mode-label {
+            font-size: 10px; font-weight: 700; letter-spacing: 1.5px;
+            text-transform: uppercase; color: var(--session-color, var(--accent));
+            opacity: 0.8;
+        }
+        .session-title-text {
+            font-size: 15px; font-weight: 700; color: var(--text-primary);
+        }
+
+        .session-panel[data-mode="new_trip"]    { --session-color: #7a8cff; }
+        .session-panel[data-mode="refine"]      { --session-color: #7a8cff; }
+        .session-panel[data-mode="weather"]     { --session-color: #60c0f8; }
+        .session-panel[data-mode="flight_search"]  { --session-color: #42d392; }
+        .session-panel[data-mode="hotel_search"]   { --session-color: #fb923c; }
+        .session-panel[data-mode="attractions"] { --session-color: #c084fc; }
+        .session-panel[data-mode="graph_query"] { --session-color: #38bdf8; }
+        .session-panel[data-mode="justify"]     { --session-color: #a78bfa; }
+
+        .stat-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+        .stat-card {
+            padding: 13px 10px; background: rgba(255,255,255,0.03);
+            border-radius: 12px; border: 1px solid var(--panel-border); transition: all 0.3s;
+        }
+        .stat-card.updated {
+            border-color: var(--session-color, rgba(122,140,255,0.5));
+            background: color-mix(in srgb, var(--session-color, #7a8cff) 10%, transparent);
+        }
+        .stat-label { font-size: 11px; color: var(--text-secondary); margin-bottom: 5px; }
+        .stat-value { font-size: 16px; font-weight: bold; word-break: break-word; }
+
+        .weather-rows { display: flex; flex-direction: column; gap: 7px; }
+        .weather-row {
+            display: flex; align-items: center; gap: 10px;
+            padding: 9px 12px; border-radius: 10px;
+            background: rgba(255,255,255,0.03); border: 1px solid var(--panel-border);
+            font-size: 12.5px;
+        }
+        .weather-row.rain-warning {
+            border-color: rgba(96,192,248,0.35); background: rgba(96,192,248,0.06);
+        }
+        .wr-icon { font-size: 18px; flex-shrink: 0; }
+        .wr-date { color: var(--text-secondary); font-size: 11px; flex-shrink: 0; min-width: 58px; }
+        .wr-desc { flex: 1; color: var(--text-primary); }
+        .wr-temp { color: #ffd97d; font-weight: 600; flex-shrink: 0; }
+        .wr-rain { font-size: 11px; flex-shrink: 0; }
+        .wr-rain.high { color: #60c0f8; font-weight: 600; }
+        .wr-rain.ok   { color: var(--text-secondary); }
+
+        .flight-rows, .hotel-rows { display: flex; flex-direction: column; gap: 7px; }
+        .flight-row, .hotel-row {
+            display: flex; align-items: center; gap: 8px;
+            padding: 9px 12px; border-radius: 10px;
+            background: rgba(255,255,255,0.03); border: 1px solid var(--panel-border);
+            font-size: 12.5px; transition: border-color 0.2s;
+        }
+        .flight-row.cheapest { border-color: rgba(66,211,146,0.4); background: rgba(66,211,146,0.06); }
+        .hotel-row.cheapest  { border-color: rgba(251,146,60,0.4);  background: rgba(251,146,60,0.06); }
+        .fr-icon { font-size: 15px; flex-shrink: 0; }
+        .fr-name { flex: 1; color: var(--text-primary); font-weight: 500; }
+        .fr-price { font-weight: 700; flex-shrink: 0; }
+        .flight-row.cheapest .fr-price { color: #42d392; }
+        .hotel-row.cheapest  .fr-price { color: #fb923c; }
+        .fr-badge {
+            font-size: 10px; padding: 2px 6px; border-radius: 8px; flex-shrink: 0;
+            background: rgba(66,211,146,0.15); color: #42d392; font-weight: 600;
+        }
+
+        .session-view { display: none; }
+        .session-view.active { display: block; }
+
+        .source-list { display: flex; flex-direction: column; gap: 10px; }
+        .source-item { padding: 12px; border-radius: 8px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); font-size: 12px; color: var(--text-secondary); line-height: 1.5; }
+        .source-item strong { color: var(--text-primary); display: block; margin-bottom: 4px; }
+
+        .bot-msg .md-table { border-collapse: collapse; width: 100%; margin: 10px 0; font-size: 13.5px; }
+        .bot-msg .md-table th, .bot-msg .md-table td { border: 1px solid rgba(255,255,255,0.12); padding: 8px 12px; text-align: left; }
+        .bot-msg .md-table th { background: rgba(122, 140, 255, 0.15); color: var(--accent-soft); font-weight: 600; }
+        .bot-msg .md-table tr:nth-child(even) td { background: rgba(255,255,255,0.03); }
+        .bot-msg .md-table tr:last-child td { font-weight: bold; color: #e0e8ff; background: rgba(122, 140, 255, 0.08); }
+
+        .bot-msg .weather-rainy { color: #7ec8e3; }
+        .bot-msg .weather-sunny { color: #ffd97d; }
+
+        .streaming-cursor {
+            display: inline-block;
+            width: 2px;
+            height: 1em;
+            background: var(--accent);
+            margin-left: 2px;
+            vertical-align: text-bottom;
+            animation: blink-cursor 0.8s step-end infinite;
+        }
+        @keyframes blink-cursor { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div><h1>Horyzonty AI Planner 🌍</h1></div>
+        <div class="status" id="connection-status">🔴 Offline (Connecting...)</div>
+        <button class="new-chat-btn" id="new-chat-btn" title="Clear chat and start a new conversation">🗑️ New conversation</button>
+    </header>
+
+    <main>
+        <div class="panel">
+
+            <div class="setup-overlay" id="setup-overlay">
+                <form class="setup-form" id="init-planner-form" onsubmit="handleFormSubmit(event)">
+                    <h2>Dokąd chcesz lecieć? ✈️</h2>
+
+                    <div class="form-group">
+                        <label for="form-city">Kierunek docelowy (Miasto)</label>
+                        <input type="text" id="form-city" list="cities-datalist" placeholder="np. Lizbona, Barcelona, Praga..." required>
+                        <datalist id="cities-datalist">
+                            <option value="Warszawa"><option value="Kraków"><option value="Wrocław"><option value="Gdańsk">
+                            <option value="Poznań"><option value="Łódź"><option value="Katowice"><option value="Lublin">
+                            <option value="Lizbona"><option value="Porto"><option value="Paryż"><option value="Londyn">
+                            <option value="Rzym"><option value="Barcelona"><option value="Madryt"><option value="Praga">
+                            <option value="Wiedeń"><option value="Amsterdam"><option value="Bruksela"><option value="Berlin">
+                            <option value="Mediolan"><option value="Florencja"><option value="Wenecja"><option value="Dubaj">
+                            <option value="Bangkok"><option value="Phuket"><option value="Kuala Lumpur"><option value="Nowy Jork">
+                        </datalist>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="form-budget">Maksymalny budżet (PLN)</label>
+                        <input type="number" id="form-budget" min="50" placeholder="np. 2000" required>
+                    </div>
+
+                    <div class="form-row-2">
+                        <div class="form-group">
+                            <label for="form-duration">Liczba dni</label>
+                            <input type="number" id="form-duration" min="1" max="30" placeholder="np. 3" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="form-people">Ilość osób</label>
+                            <input type="number" id="form-people" min="1" placeholder="np. 2" required>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="setup-submit-btn">Generuj Plan Wyjazdu ›</button>
+                </form>
+            </div>
+
+            <div class="chat-header">
+                <span>Travel Workspace</span>
+            </div>
+
+            <div class="agent-progress" id="agent-progress">
+                <div class="agent-step" id="step-intent">🧭 Intent</div>
+                <span class="agent-arrow">›</span>
+                <div class="agent-step" id="step-researcher">🔍 Researcher</div>
+                <span class="agent-arrow">›</span>
+                <div class="agent-step" id="step-weather">🌤️ Weather</div>
+                <span class="agent-arrow">›</span>
+                <div class="agent-step" id="step-booking">💳 Booking</div>
+                <span class="agent-arrow">›</span>
+                <div class="agent-step" id="step-planner">📅 Planner</div>
+            </div>
+
+            <div class="chat-messages" id="chat-box">
+                <div class="msg-wrapper bot">
+                    <div class="msg bot-msg">Hi! I'm your intelligent travel assistant 🌍<br><br>I can help you:<br>• <strong>Plan a trip</strong> — e.g. "3 days in Lisbon for 2000 PLN"<br>• <strong>Find flights</strong> — e.g. "flights to Barcelona"<br>• <strong>Find hotels</strong> — e.g. "hotels in Prague"<br>• <strong>Show attractions</strong> — e.g. "what to see in Porto"<br>• <strong>Explain recommendations</strong> — e.g. "why did you recommend that museum"</div>
+                </div>
+            </div>
+            <div class="input-area">
+                <input type="text" id="user-input" placeholder="Plan a trip, find a flight, show attractions...">
+                <button id="send-btn">Send ›</button>
+            </div>
+        </div>
+
+        <div class="sidebar">
+            <div class="panel info-box session-panel" id="session-panel" data-mode="new_trip">
+                <div class="session-header">
+                    <span class="session-icon" id="session-icon">🗺️</span>
+                    <div class="session-title-area">
+                        <span class="session-mode-label" id="session-mode-label">TRIP PLANNING</span>
+                        <span class="session-title-text" id="session-title-text">Current Session</span>
+                    </div>
+                </div>
+
+                <div class="session-view active" id="view-trip">
+                    <div class="stat-grid">
+                        <div class="stat-card" id="card-city">
+                            <div class="stat-label">Destination</div>
+                            <div class="stat-value" id="ui-city">—</div>
+                        </div>
+                        <div class="stat-card" id="card-budget">
+                            <div class="stat-label">Budget</div>
+                            <div class="stat-value" id="ui-budget">—</div>
+                        </div>
+                        <div class="stat-card" id="card-duration">
+                            <div class="stat-label">Days</div>
+                            <div class="stat-value" id="ui-duration">—</div>
+                        </div>
+                    </div>
+                    <div id="card-date-row" style="display:none; margin-top:10px; padding:10px 12px; border-radius:10px; background:rgba(255,255,255,0.03); border:1px solid var(--panel-border); font-size:12.5px; color:var(--text-secondary);">
+                        ✈️ Departure: <strong id="ui-date" style="color:var(--text-primary)">—</strong>
+                    </div>
+                </div>
+
+                <div class="session-view" id="view-weather">
+                    <div class="weather-rows" id="weather-rows">
+                        <div style="font-size:13px;color:var(--text-secondary);text-align:center;padding:10px 0">
+                            Forecast will appear here…
+                        </div>
+                    </div>
+                </div>
+
+                <div class="session-view" id="view-flights">
+                    <div class="flight-rows" id="flight-rows">
+                        <div style="font-size:13px;color:var(--text-secondary);text-align:center;padding:10px 0">
+                            Flights will appear here…
+                        </div>
+                    </div>
+                </div>
+
+                <div class="session-view" id="view-hotels">
+                    <div class="hotel-rows" id="hotel-rows">
+                        <div style="font-size:13px;color:var(--text-secondary);text-align:center;padding:10px 0">
+                            Hotels will appear here…
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel info-box" style="flex: 1; overflow-y: auto;">
+                <h3 style="margin-bottom:15px;font-size:16px;color:var(--accent);text-transform:uppercase;letter-spacing:1px">RAG Sources</h3>
+                <div id="sources-box" class="source-list">
+                    <div style="font-size: 13px; color: var(--text-secondary); text-align: center; margin-top: 20px;">
+                        Excerpts from the Wikivoyage guide and Neo4j database data will appear here.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        const chatBox = document.getElementById('chat-box');
+        const userInput = document.getElementById('user-input');
+        const sendBtn = document.getElementById('send-btn');
+        const newChatBtn = document.getElementById('new-chat-btn');
+        const statusBadge = document.getElementById('connection-status');
+        const uiCity = document.getElementById('ui-city');
+        const uiBudget = document.getElementById('ui-budget');
+        const uiDuration = document.getElementById('ui-duration');
+        const sourcesBox = document.getElementById('sources-box');
+        const agentProgress = document.getElementById('agent-progress');
+        const sessionPanel = document.getElementById('session-panel');
+        const setupOverlay = document.getElementById('setup-overlay');
+
+        const MODE_CONFIG = {
+            new_trip:      { icon: '🗺️',  label: 'TRIP PLANNING',  title: 'Current Session',  view: 'trip' },
+            refine:        { icon: '✏️',  label: 'REFINING PLAN',  title: 'Current Session',  view: 'trip' },
+            weather:       { icon: '🌤️',  label: 'WEATHER CHECK',  title: 'Forecast',          view: 'weather' },
+            flight_search: { icon: '✈️',  label: 'FLIGHT SEARCH',  title: 'Available Flights', view: 'flights' },
+            hotel_search:  { icon: '🏨',  label: 'HOTEL SEARCH',   title: 'Available Hotels',  view: 'hotels' },
+            attractions:   { icon: '🎯',  label: 'ATTRACTIONS',    title: 'Places to Visit',   view: 'trip' },
+            graph_query:   { icon: '🔗',  label: 'GRAPH QUERY',    title: 'Knowledge Graph',   view: 'trip' },
+            justify:       { icon: '💡',  label: 'EXPLANATION',    title: 'Source Details',    view: 'trip' },
+            off_topic:     { icon: '🚫',  label: 'OFF TOPIC',      title: 'Travel Only',       view: 'trip' },
+        };
+
+        function switchMode(mode, city = null) {
+            const cfg = MODE_CONFIG[mode] || MODE_CONFIG.new_trip;
+            sessionPanel.dataset.mode = mode;
+            document.getElementById('session-icon').textContent = cfg.icon;
+            document.getElementById('session-mode-label').textContent = cfg.label;
+            document.getElementById('session-title-text').textContent = city ? `${cfg.title} — ${city}` : cfg.title;
+            document.querySelectorAll('.session-view').forEach(v => v.classList.remove('active'));
+            const target = document.getElementById(`view-${cfg.view}`);
+            if (target) target.classList.add('active');
+        }
+
+        function flashCard(cardId) {
+            const card = document.getElementById(cardId);
+            if (!card) return;
+            card.classList.add('updated');
+            setTimeout(() => card.classList.remove('updated'), 1500);
+        }
+
+        function renderWeather(forecast) {
+            const container = document.getElementById('weather-rows');
+            container.innerHTML = '';
+            forecast.forEach(day => {
+                const isRainy = !day.outdoor_friendly;
+                const icon = isRainy ? '🌧️' : (day.rain_probability > 40 ? '🌤️' : '☀️');
+                const date = day.date ? day.date.slice(5) : '';
+                const row = document.createElement('div');
+                row.className = `weather-row${isRainy ? ' rain-warning' : ''}`;
+                row.innerHTML = `
+                    <span class="wr-icon">${icon}</span>
+                    <span class="wr-date">${date}</span>
+                    <span class="wr-desc">${day.description || ''}</span>
+                    <span class="wr-temp">${day.temp_avg}°C</span>
+                    <span class="wr-rain ${day.rain_probability >= 70 ? 'high' : 'ok'}">
+                        💧${day.rain_probability}%${isRainy ? ' ⚠️' : ''}
+                    </span>`;
+                container.appendChild(row);
+            });
+        }
+
+        function renderFlights(flights, budget) {
+            const container = document.getElementById('flight-rows');
+            container.innerHTML = '';
+            const isLive = flights.length > 0 && flights[0].source === 'Duffel';
+            if (isLive) {
+                const badge = document.createElement('div');
+                badge.style.cssText = 'font-size:10px;color:#42d392;margin-bottom:8px;font-weight:600;letter-spacing:1px;';
+                badge.textContent = '✅ LIVE DATA — DUFFEL';
+                container.appendChild(badge);
+            }
+            flights.forEach((f, i) => {
+                const price = typeof f.price === 'number' ? f.price : parseFloat(f.price) || 0;
+                const inBudget = budget && price <= budget;
+                const row = document.createElement('div');
+                row.className = `flight-row${i === 0 ? ' cheapest' : ''}`;
+                const timeInfo = f.departure ? `<small style="color:var(--text-secondary);margin-left:4px">${f.departure}→${f.arrival}</small>` : '';
+                const durInfo = f.duration ? `<small style="color:var(--text-secondary)"> (${f.duration})</small>` : '';
+                const bookBtn = f.booking_url
+                    ? `<a href="${f.booking_url}" target="_blank" rel="noopener noreferrer"
+                          style="font-size:10px;padding:3px 8px;border-radius:6px;
+                                 background:rgba(122,140,255,0.15);color:var(--accent);
+                                 border:1px solid rgba(122,140,255,0.3);text-decoration:none;
+                                 white-space:nowrap;flex-shrink:0;margin-left:4px">Book ↗</a>`
+                    : '';
+                row.innerHTML = `
+                    <span class="fr-icon">✈️</span>
+                    <span class="fr-name">${f.airline}${timeInfo}${durInfo}</span>
+                    <span class="fr-price">${price} PLN</span>
+                    ${inBudget ? '<span class="fr-badge">✓ budget</span>' : ''}
+                    ${bookBtn}`;
+                container.appendChild(row);
+            });
+        }
+
+        function renderHotels(hotels, budget) {
+            const container = document.getElementById('hotel-rows');
+            container.innerHTML = '';
+            hotels.forEach((h, i) => {
+                const price = typeof h.price === 'number' ? h.price : parseFloat(h.price) || 0;
+                const inBudget = budget && price <= budget / 3;
+                const row = document.createElement('div');
+                row.className = `hotel-row${i === 0 ? ' cheapest' : ''}`;
+                row.innerHTML = `
+                    <span class="fr-icon">🏨</span>
+                    <span class="fr-name">${h.name}</span>
+                    <span class="fr-price">${price} <small>PLN/n</small></span>
+                    ${inBudget ? '<span class="fr-badge" style="background:rgba(251,146,60,0.15);color:#fb923c">✓ fits</span>' : ''}`;
+                container.appendChild(row);
+            });
+        }
+
+        function renderMarkdown(text) {
+            text = text.replace(/((?:^\|.+\|\n?)+)/gm, (tableBlock) => {
+                const rows = tableBlock.trim().split('\n').filter(r => r.trim());
+                if (rows.length < 2) return tableBlock;
+                let html = '<table class="md-table">';
+                rows.forEach((row, i) => {
+                    if (/^\|[-:\s|]+\|$/.test(row.trim())) return;
+                    const cells = row.trim().replace(/^\||\|$/g, '').split('|');
+                    const tag = i === 0 ? 'th' : 'td';
+                    html += '<tr>' + cells.map(c => `<${tag}>${c.trim()}</${tag}>`).join('') + '</tr>';
+                });
+                html += '</table>';
+                return html;
+            });
+
+            return text
+                .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+                .replace(/\*(.+?)\*/g, '<em>$1</em>')
+                .replace(/### (.+)/g, '<h3>$1</h3>')
+                .replace(/## (.+)/g, '<h3>$1</h3>')
+                .replace(/\[([^\]]+)\]\((https?:\/\/[^\)]+)\)/g,
+                    '<a href="$2" target="_blank" rel="noopener noreferrer" style="color:var(--accent);text-decoration:underline">$1</a>')
+                .replace(/^[-•] (.+)/gm, '<li>$1</li>')
+                .replace(/(<li>.*<\/li>)/gs, '<ul>$1</ul>')
+                .replace(/`(.+?)`/g, '<code>$1</code>')
+                .replace(/---/g, '<hr>')
+                .replace(/\n/g, '<br>');
+        }
+
+        function getTime() {
+            return new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+        }
+
+        const agentStepMap = {
+            'IntentClassifier': 'step-intent',
+            'Researcher': 'step-researcher',
+            'Weather': 'step-weather',
+            'Booking': 'step-booking',
+            'Planner': 'step-planner',
+            'Refine': 'step-planner',
+            'FlightSearch': 'step-booking',
+            'HotelSearch': 'step-booking',
+            'Attractions': 'step-researcher',
+            'Justify': 'step-researcher',
+            'GraphQuery': 'step-researcher',
+            'OffTopic': 'step-intent',
+        };
+
+        function setAgentStep(nodeName) {
+            agentProgress.classList.add('active');
+            const stepId = agentStepMap[nodeName];
+            document.querySelectorAll('.agent-step').forEach(s => {
+                s.classList.remove('active', 'done');
+                s.querySelector('.agent-dot')?.remove();
+            });
+            if (stepId) {
+                const el = document.getElementById(stepId);
+                if (el) {
+                    el.classList.add('active');
+                    const dot = document.createElement('span');
+                    dot.className = 'agent-dot pulse';
+                    el.prepend(dot);
+                }
+            }
+        }
+
+        function finishAgentProgress() {
+            document.querySelectorAll('.agent-step').forEach(s => {
+                s.classList.remove('active');
+                s.classList.add('done');
+                s.querySelector('.agent-dot')?.remove();
+            });
+            setTimeout(() => {
+                agentProgress.classList.remove('active');
+                document.querySelectorAll('.agent-step').forEach(s => s.classList.remove('done'));
+            }, 2000);
+        }
+
+        let typingEl = null;
+        function showTyping() {
+            if (typingEl) return;
+            typingEl = document.createElement('div');
+            typingEl.className = 'msg-wrapper bot';
+            typingEl.id = 'typing-indicator';
+            typingEl.innerHTML = `<div class="typing-indicator"><div class="typing-dots">
+                <div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div>
+            </div></div>`;
+            chatBox.appendChild(typingEl);
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        function hideTyping() {
+            if (typingEl) { typingEl.remove(); typingEl = null; }
+        }
+
+        let ws;
+        let _streamWrapper = null;
+        let _streamMsgDiv = null;
+        let _streamRawText = "";
+        let _streamPrefix = "";
+
+        function connectWebSocket() {
+            ws = new WebSocket("ws://127.0.0.1:8000/ws");
+            ws.onopen = () => {
+                statusBadge.textContent = "🟢 Online";
+                statusBadge.classList.add('online');
+                sendBtn.disabled = false;
+            };
+            ws.onclose = () => {
+                statusBadge.textContent = "🔴 Offline";
+                statusBadge.classList.remove('online');
+                sendBtn.disabled = true;
+                setTimeout(connectWebSocket, 3000);
+            };
+            ws.onerror = (e) => console.error("WS Error:", e);
+
+            ws.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+
+                if (data.type === "stream_start") {
+                    hideTyping();
+                    setAgentStep(data.node);
+                    _streamRawText = "";
+                    _streamPrefix = data.prefix || "";
+
+                    _streamWrapper = document.createElement('div');
+                    _streamWrapper.className = 'msg-wrapper bot';
+
+                    const timeDiv = document.createElement('div');
+                    timeDiv.className = 'msg-timestamp';
+                    timeDiv.textContent = getTime();
+
+                    _streamMsgDiv = document.createElement('div');
+                    _streamMsgDiv.className = 'msg bot-msg';
+
+                    if (_streamPrefix) {
+                        const prefixDiv = document.createElement('div');
+                        prefixDiv.innerHTML = renderMarkdown(_streamPrefix);
+                        _streamMsgDiv.appendChild(prefixDiv);
+                    }
+
+                    const textNode = document.createElement('span');
+                    textNode.id = 'stream-text-node';
+                    const cursor = document.createElement('span');
+                    cursor.className = 'streaming-cursor';
+                    cursor.id = 'stream-cursor';
+
+                    _streamMsgDiv.appendChild(textNode);
+                    _streamMsgDiv.appendChild(cursor);
+
+                    _streamWrapper.appendChild(timeDiv);
+                    _streamWrapper.appendChild(_streamMsgDiv);
+                    chatBox.appendChild(_streamWrapper);
+                    chatBox.scrollTop = chatBox.scrollHeight;
+                }
+                else if (data.type === "stream_chunk") {
+                    if (!_streamMsgDiv) return;
+                    _streamRawText += data.content;
+                    const textNode = document.getElementById('stream-text-node');
+                    if (textNode) textNode.innerHTML = renderMarkdown(_streamRawText);
+                    chatBox.scrollTop = chatBox.scrollHeight;
+                }
+                else if (data.type === "stream_end") {
+                    if (!_streamWrapper || !_streamMsgDiv) return;
+                    finishAgentProgress();
+
+                    _streamMsgDiv.innerHTML = (_streamPrefix ? renderMarkdown(_streamPrefix) : "") + renderMarkdown(_streamRawText);
+
+                    if (data.sources && data.sources.length > 0) {
+                        const sourceTag = document.createElement('span');
+                        sourceTag.className = 'source-tag';
+                        sourceTag.textContent = `📚 Sources: ${data.sources.length}`;
+                        _streamMsgDiv.appendChild(sourceTag);
+                        data.sources.forEach((src, i) => {
+                            const item = document.createElement('div');
+                            item.className = 'source-item';
+                            item.innerHTML = `<strong>Excerpt ${i + 1}</strong>${src}`;
+                            sourcesBox.appendChild(item);
+                        });
+                    }
+
+                    const actions = document.createElement('div');
+                    actions.className = 'msg-actions';
+                    const copyBtn = document.createElement('button');
+                    copyBtn.className = 'copy-btn';
+                    copyBtn.textContent = '📋 Copy';
+                    const fullText = _streamPrefix + _streamRawText;
+                    copyBtn.onclick = () => {
+                        navigator.clipboard.writeText(fullText);
+                        copyBtn.textContent = '✅ Copied';
+                        copyBtn.classList.add('copied');
+                        setTimeout(() => { copyBtn.textContent = '📋 Copy'; copyBtn.classList.remove('copied'); }, 2000);
+                    };
+                    actions.appendChild(copyBtn);
+                    _streamWrapper.appendChild(actions);
+
+                    _streamWrapper = null; _streamMsgDiv = null; _streamRawText = ""; _streamPrefix = "";
+                    chatBox.scrollTop = chatBox.scrollHeight;
+                }
+                else if (data.type === "response") {
+                    hideTyping();
+                    const isProgress = data.content && (data.content.startsWith('🔍') || data.content.startsWith('✏️') || data.content.startsWith('📚'));
+                    if (!isProgress) { finishAgentProgress(); }
+                    addBotMessage(data.content, data.sources);
+                }
+                else if (data.type === "mode_update") {
+                    switchMode(data.mode, data.city || null);
+                }
+                else if (data.type === "state_update") {
+                    const s = data.state;
+                    if (s.destination) { uiCity.textContent = s.destination; flashCard('card-city'); }
+                    if (s.budget && typeof s.budget !== 'object') { uiBudget.textContent = s.budget + (typeof s.budget === 'number' ? ' PLN' : ''); flashCard('card-budget'); }
+                    if (s.duration) { uiDuration.textContent = s.duration + ' days'; flashCard('card-duration'); }
+                    if (s.departure_date) {
+                        document.getElementById('ui-date').textContent = s.departure_date;
+                        document.getElementById('card-date-row').style.display = 'block';
+                    }
+                    if (s.weather_forecast && s.weather_forecast.length) { renderWeather(s.weather_forecast); }
+                    if (s.flights_list && s.flights_list.length) { renderFlights(s.flights_list, s.budget); }
+                    if (s.flights && s.flights.length) { renderFlights(s.flights, s.budget); }
+                    if (s.hotels_list && s.hotels_list.length) { renderHotels(s.hotels_list, s.budget); }
+                    if (s.selected_hotel && s.selected_hotel.name) { renderHotels([s.selected_hotel], s.budget); }
+                }
+                else if (data.type === "session_reset") {
+                    chatBox.innerHTML = `<div class="msg bot-msg">Hi! I'm your intelligent travel assistant 🌍<br><br>I can help you:<br>• <strong>Plan a trip</strong> — e.g. "3 days in Lisbon for 2000 PLN"</div>`;
+                    sourcesBox.innerHTML = '';
+                    uiCity.textContent = '—'; uiBudget.textContent = '—'; uiDuration.textContent = '—';
+                    document.getElementById('weather-rows').innerHTML = '<div style="font-size:13px;color:var(--text-secondary);text-align:center;padding:10px 0">Forecast will appear here…</div>';
+                    document.getElementById('flight-rows').innerHTML = '<div style="font-size:13px;color:var(--text-secondary);text-align:center;padding:10px 0">Flights will appear here…</div>';
+                    document.getElementById('hotel-rows').innerHTML = '<div style="font-size:13px;color:var(--text-secondary);text-align:center;padding:10px 0">Hotels will appear here…</div>';
+                    switchMode('new_trip');
+                    hideTyping();
+                    agentProgress.classList.remove('active');
+                    _streamWrapper = null; _streamMsgDiv = null; _streamRawText = ""; _streamPrefix = "";
+
+                    // Pokonaj overlay formularza ponownie przy resecie
+                    document.getElementById('init-planner-form').reset();
+                    setupOverlay.style.display = 'flex';
+                }
+            };
+        }
+        connectWebSocket();
+
+        // ── OBSŁUGA FORMULARZA STARTOWEGO ──────────────────────────────────
+        function handleFormSubmit(event) {
+            event.preventDefault();
+            if (ws.readyState !== WebSocket.OPEN) return;
+
+            const city = document.getElementById('form-city').value.trim();
+            const budget = document.getElementById('form-budget').value.trim();
+            const duration = document.getElementById('form-duration').value.trim();
+            const people = document.getElementById('form-people').value.trim();
+
+            // Ukrywamy formularz nakładki
+            setupOverlay.style.display = 'none';
+
+            // Budujemy naturalną wiadomość dla backendu na bazie wpisanych pól
+            const triggerMessage = `Chcę zaplanować wyjazd do miasta ${city} na ${duration} dni dla ${people} osób, mój budżet to ${budget} PLN.`;
+
+            // Renderujemy w czacie jako wiadomość usera
+            const wrapper = document.createElement('div');
+            wrapper.className = 'msg-wrapper user';
+            wrapper.innerHTML = `<div class="msg-timestamp">${getTime()}</div><div class="msg user-msg">${triggerMessage}</div>`;
+            chatBox.appendChild(wrapper);
+            chatBox.scrollTop = chatBox.scrollHeight;
+
+            // Wysyłamy paczkę do backendu przez WebSocket
+            ws.send(JSON.stringify({ message: triggerMessage }));
+
+            showTyping();
+            agentProgress.classList.add('active');
+            setAgentStep('IntentClassifier');
+        }
+
+        function sendMessage() {
+            const text = userInput.value.trim();
+            if (!text || ws.readyState !== WebSocket.OPEN) return;
+
+            const wrapper = document.createElement('div');
+            wrapper.className = 'msg-wrapper user';
+            wrapper.innerHTML = `<div class="msg-timestamp">${getTime()}</div><div class="msg user-msg">${text}</div>`;
+            chatBox.appendChild(wrapper);
+            chatBox.scrollTop = chatBox.scrollHeight;
+
+            ws.send(JSON.stringify({ message: text }));
+            userInput.value = '';
+            sourcesBox.innerHTML = '';
+
+            showTyping();
+            agentProgress.classList.add('active');
+            setAgentStep('IntentClassifier');
+        }
+
+        function addBotMessage(text, sources = []) {
+            hideTyping();
+
+            if (text.includes('[Researcher]') || text.startsWith('📚')) setAgentStep('Researcher');
+            else if (text.startsWith('🌤️') || text.includes('Weather Forecast')) setAgentStep('Weather');
+            else if (text.includes('[Booking]') || text.startsWith('💳') || text.includes('flights WAW')) setAgentStep('Booking');
+            else if (text.includes('[Planner]') || text.includes('Day 1')) setAgentStep('Planner');
+            else if (text.startsWith('🔍') || text.includes('Graph Query Result')) setAgentStep('GraphQuery');
+            else if (text.includes('attraction') || text.includes('sightseeing')) setAgentStep('Attractions');
+            else if (text.includes('📌 Source')) setAgentStep('Justify');
+            else if (text.startsWith('🚫') || text.includes('travel assistant')) setAgentStep('OffTopic');
+
+            const wrapper = document.createElement('div');
+            wrapper.className = 'msg-wrapper bot';
+
+            const msgDiv = document.createElement('div');
+            msgDiv.className = 'msg bot-msg';
+            msgDiv.innerHTML = renderMarkdown(text);
+
+            if (sources && sources.length > 0) {
+                const sourceTag = document.createElement('span');
+                sourceTag.className = 'source-tag';
+                sourceTag.textContent = `📚 Sources: ${sources.length}`;
+                msgDiv.appendChild(sourceTag);
+                sources.forEach((src, i) => {
+                    const item = document.createElement('div');
+                    item.className = 'source-item';
+                    item.innerHTML = `<strong>Excerpt ${i + 1}</strong>${src}`;
+                    sourcesBox.appendChild(item);
+                });
+            }
+
+            const actions = document.createElement('div');
+            actions.className = 'msg-actions';
+
+            const copyBtn = document.createElement('button');
+            copyBtn.className = 'copy-btn';
+            copyBtn.textContent = '📋 Copy';
+            copyBtn.onclick = () => {
+                navigator.clipboard.writeText(text);
+                copyBtn.textContent = '✅ Copied';
+                copyBtn.classList.add('copied');
+                setTimeout(() => { copyBtn.textContent = '📋 Copy'; copyBtn.classList.remove('copied'); }, 2000);
+            };
+            actions.appendChild(copyBtn);
+
+            const timeDiv = document.createElement('div');
+            timeDiv.className = 'msg-timestamp';
+            timeDiv.textContent = getTime();
+
+            wrapper.appendChild(timeDiv);
+            wrapper.appendChild(msgDiv);
+            wrapper.appendChild(actions);
+            chatBox.appendChild(wrapper);
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        sendBtn.addEventListener('click', sendMessage);
+        userInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') sendMessage(); });
+        newChatBtn.addEventListener('click', () => {
+            if (ws.readyState !== WebSocket.OPEN) return;
+            ws.send(JSON.stringify({ type: "reset" }));
+        });
+    </script>
+</body>
+</html>

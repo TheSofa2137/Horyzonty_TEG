@@ -1,0 +1,44 @@
+# Horyzonty – Python dependencies
+# Install with:  pip install -r requirements.txt
+#
+# Windows users: if chromadb installation fails with a C++ build error, install
+# "Microsoft C++ Build Tools" first:
+# https://visualstudio.microsoft.com/visual-cpp-build-tools/
+
+# ── Web framework & server ────────────────────────────────────────────────────
+fastapi>=0.110.0
+uvicorn[standard]>=0.29.0          # [standard] pulls in websockets & httptools
+websockets>=12.0
+
+# ── LangChain ecosystem ───────────────────────────────────────────────────────
+langchain>=0.2.0
+langchain-core>=0.2.0
+langchain-community>=0.2.0
+langchain-ollama>=0.1.0
+langchain-chroma>=0.1.0
+langchain-text-splitters>=0.2.0
+langchain-classic>=0.0.1           # provides MultiQueryRetriever used in orchestrator.py
+langgraph>=0.1.0
+
+# ── Vector store ─────────────────────────────────────────────────────────────
+chromadb>=0.5.0
+
+# ── Graph database ────────────────────────────────────────────────────────────
+neo4j>=5.0.0
+
+# ── Testing & Quality Assurance (NEW) ─────────────────────────────────────────
+pytest>=8.0.0                      
+pytest-asyncio>=0.23.0             
+pytest-mock>=3.12.0                
+httpx>=0.27.0                      
+
+# ── RAG Evaluation (NEW) ──────────────────────────────────────────────────────
+ragas>=0.1.0                       
+datasets>=2.18.0                   
+pandas>=2.0.0                      
+
+# ── HTTP & utilities ──────────────────────────────────────────────────────────
+requests>=2.31.0
+python-dotenv>=1.0.0
+numpy>=1.26.0
+
